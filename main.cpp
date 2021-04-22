@@ -35,12 +35,18 @@
 #include "CircleFitByTaubin.hpp"
 #include "PointArray.hpp"
 #include "filter.hpp"
-
+//
+#include "serialib.cpp"
+#include "serialib.hpp"
+//
 #include <fstream>
 #include <signal.h>
 #include <string>
 #include <vector>
 using namespace std;
+
+// read this:
+// https://lucidar.me/en/serialib/cross-plateform-rs232-serial-library/
 
 template <typename T>
 PointArray<T> partition(PointArray<T> arr, int index,
@@ -71,8 +77,11 @@ void split(const string &s, vector<string> &tokens,
 }
 
 int main(int argc, const char *argv[]) {
+
+  serialib serial;
+
   ifstream f;
-  f.open("data.csv", ios::in);
+  f.open("Sample4/data.csv", ios::in);
   if (!f.is_open())
     return 1;
   vector<PolarVector> pvs;
@@ -86,8 +95,8 @@ int main(int argc, const char *argv[]) {
     vector<string> tokens;
     split(line, tokens, ",");
     float dist = stof(tokens[1]);
-    // if (dist < 500 || dist > 1700)
-    //   dist = 0;
+    if (dist < 3000 || dist > 6000)
+      dist = 0;
     PolarVector pv = PolarVector::inDegree(stof(tokens[0]), dist);
     cout << pv.toCSVString() << endl;
 
@@ -96,7 +105,7 @@ int main(int argc, const char *argv[]) {
     pts.push_back(pv.toCartesian());
   }
 
-  vector<int> min = Filter::localMinimum(pts, 0.03);
+  vector<int> min = Filter::localMinimum(pts, 0.004);
 
   cout << "found local minimum:" << endl;
   for (int m : min) {
