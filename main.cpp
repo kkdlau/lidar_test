@@ -34,7 +34,7 @@
 #include "CircleFitByLevenbergMarquardtFull.hpp"
 #include "CircleFitByTaubin.hpp"
 #include "PointArray.hpp"
-#include "fliter.hpp"
+#include "filter.hpp"
 
 #include <fstream>
 #include <signal.h>
@@ -96,7 +96,7 @@ int main(int argc, const char *argv[]) {
     pts.push_back(pv.toCartesian());
   }
 
-  vector<int> min = Fliter::localMinimum(pts, 0.03);
+  vector<int> min = Filter::localMinimum(pts, 0.03);
 
   cout << "found local minimum:" << endl;
   for (int m : min) {

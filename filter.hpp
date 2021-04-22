@@ -3,7 +3,7 @@
 #include <vector>
 using namespace std;
 
-namespace Fliter {
+namespace Filter {
 template <typename T>
 void withinRange(PointArray<T> &arr, const double min, const double max) {
   for (Point<T> &p : arr) {
@@ -156,4 +156,4 @@ vector<int> localMinimum(const PointArray<T> &arr, const double searchingRad) {
 
   return min;
 }
-} // namespace Fliter
+} // namespace Filter
