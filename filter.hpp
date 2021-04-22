@@ -1,8 +1,18 @@
 #include "PointArray.hpp"
 #include "PolarVector.hpp"
+#include <functional>
 #include <vector>
 using namespace std;
 
+enum class Trend { DOWNWARD, NONE, UPWARD };
+inline Trend slopeTrend(const double slope) {
+  if (isinf(slope) || isnan(slope))
+    return Trend::NONE;
+  else if (slope < 0)
+    return Trend::DOWNWARD;
+  else
+    return Trend::UPWARD;
+}
 namespace Filter {
 template <typename T>
 void withinRange(PointArray<T> &arr, const double min, const double max) {
@@ -99,6 +109,28 @@ float firstDerivative(const vector<PolarVector> &arr, int index) {
 }
 
 template <typename T>
+double avgSlope(const PointArray<T> &arr, const int START, const int dir,
+                function<bool(double)> shouldStop) {
+  double v = 0;
+  unsigned count = 0;
+
+  int i = START;
+  PolarVector pv;
+
+  do {
+    double d = firstDerivative(arr, i);
+    if (d != 0) {
+      v += d;
+      count++;
+    }
+    i += 1 * dir;
+    pv = PolarVector::fromCartesian(arr[i]);
+  } while (!shouldStop(pv.rad) && i >= 0 && i < arr.size());
+
+  return v / count;
+}
+
+template <typename T>
 vector<int> localMinimum(const PointArray<T> &arr, const double searchingRad) {
   vector<int> min;
 
@@ -108,49 +140,21 @@ vector<int> localMinimum(const PointArray<T> &arr, const double searchingRad) {
     if (pv.mag == 0) // invalid data, skip
       continue;
 
-    float dwSlope = .0f; // downward slope
-    int numDW = 0;
-    float uwSlope = .0f; // upward slope
-    int numUW = 0;
-
     const double curRad = pv.rad;
 
-    int r = i;
-    do {
-      r--;
-      if (PolarVector::fromCartesian(arr[r]).mag == 0)
-        continue;
-      float d = firstDerivative(arr, r);
-      if (!d || isinf(d) || isnan(d))
-        continue;
-      dwSlope += d;
-      ++numDW;
-      // cout << "searching dw: " << d << endl;
-    } while (r >= 0 &&
-             PolarVector::fromCartesian(arr[r]).rad >= curRad - searchingRad);
+    double lslope = avgSlope(arr, i, -1, [curRad, searchingRad](double rad) {
+      return rad < curRad - searchingRad;
+    });
 
-    int k = i;
+    double rslope = avgSlope(arr, i, 1, [curRad, searchingRad](double rad) {
+      return rad > curRad + searchingRad;
+    });
 
-    do {
-      k++;
-      if (PolarVector::fromCartesian(arr[k]).mag == 0)
-        continue;
-      float d = firstDerivative(arr, k);
-      if (!d || isinf(d) || isnan(d))
-        continue;
-      uwSlope += d;
-      ++numUW;
-      // cout << "searching uw: " << d << endl;
-
-    } while (k < arr.size() &&
-             PolarVector::fromCartesian(arr[k]).rad <= curRad + searchingRad);
-
-    if (dwSlope / numDW < 0 && uwSlope / numUW > 0) {
-      // cout << "push a min index" << endl;
+    if (slopeTrend(lslope) == Trend::DOWNWARD &&
+        slopeTrend(rslope) == Trend::UPWARD) {
       min.push_back(i);
-      i += k;
-    } else {
-      // cout << "fk" << endl;
+      while (PolarVector::fromCartesian(arr[i]).rad < curRad + searchingRad)
+        i++;
     }
   }
 

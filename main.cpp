@@ -86,8 +86,8 @@ int main(int argc, const char *argv[]) {
     vector<string> tokens;
     split(line, tokens, ",");
     float dist = stof(tokens[1]);
-    if (dist < 500 || dist > 1700)
-      dist = 0;
+    // if (dist < 500 || dist > 1700)
+    //   dist = 0;
     PolarVector pv = PolarVector::inDegree(stof(tokens[0]), dist);
     cout << pv.toCSVString() << endl;
 
@@ -102,23 +102,21 @@ int main(int argc, const char *argv[]) {
   for (int m : min) {
     cout << m << ": " << pvs[m].toString() << endl;
 
-    PointArray<double> circleData = partition(pts, m);
+    Circle best;
 
-    for (const auto &p : circleData) {
-      cout << PolarVector::fromCartesian(p).toString() << endl;
+    best.r = 10000000;
+
+    for (int s = 3; s < 50; s += 1) {
+      PointArray<double> circleData = partition(pts, m, s);
+      Circle c = CircleFittingModel::taubinFitting(circleData);
+      CircleFittingModel::levenbergMarquardtFullFitting(circleData, c, 0.0001,
+                                                        c);
+      if (abs(160 - c.r) < abs(160 - best.r)) {
+        best = c;
+      }
     }
 
-    cout << "circle approximation:" << endl;
-
-    cout << "\napproximation by taubinFitting:" << endl;
-    Circle c = CircleFittingModel::taubinFitting(circleData);
-
-    c.print();
-
-    cout << "\napproximation by levenbergMarquardtFullFitting:" << endl;
-    CircleFittingModel::levenbergMarquardtFullFitting(circleData, c, 0.0001, c);
-
-    c.print();
+    best.print();
   }
 
   f.close();

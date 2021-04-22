@@ -1,0 +1,20 @@
+65: angle: 81.952516, mag: 920.000000
+circle approximation:
+
+approximation by taubinFitting:
+
+center (134.1948135,1064.390531)  radius 154.3028689  sigma 0.9530706683  gradient 0  iter 0  inner 3
+
+approximation by levenbergMarquardtFullFitting:
+
+center (134.1976665,1064.37212)  radius 154.2840586  sigma 0.9530619766  gradient 0  iter 3  inner 0
+182: angle: 104.606325, mag: 1242.000000
+circle approximation:
+
+approximation by taubinFitting:
+
+center (-378.4419587,1423.528735)  radius 220.847236  sigma 10.68962807  gradient 0  iter 0  inner 4
+
+approximation by levenbergMarquardtFullFitting:
+
+center (-377.8998946,1423.970618)  radius 220.8839608  sigma 10.68363798  gradient 0  iter 5  inner 0

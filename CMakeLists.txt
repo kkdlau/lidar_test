@@ -3,6 +3,8 @@ project(lidar_test VERSION 0.1.0)
 
 include(CTest)
 enable_testing()
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 file(GLOB FILES "/*.hpp" "/*.cpp")
 
