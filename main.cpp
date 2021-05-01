@@ -25,10 +25,11 @@
  */
 
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
-
+//
 #include "Circle.hpp"
 #include "CircleFitByKasa.hpp"
 #include "CircleFitByLevenbergMarquardtFull.hpp"
@@ -40,7 +41,7 @@
 #include "serialib.cpp"
 #include "serialib.hpp"
 //
-#include <fstream>
+#include "sdk/include/rplidar.h"
 #include <signal.h>
 #include <string>
 #include <vector>
