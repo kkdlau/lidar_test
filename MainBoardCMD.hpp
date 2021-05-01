@@ -17,10 +17,12 @@ typedef union {
   RequestLidarCMD cmd;
 } BytewiseRequestLidarCMD;
 
-static void print_cmd(const BytewiseRequestLidarCMD &cmd) {
+static ostream &operator<<(ostream &cout, const BytewiseRequestLidarCMD &cmd) {
   cout << "Lidar CMD:" << endl;
   cout << "\tmin dist: " << cmd.cmd.search_min_dist << endl;
   cout << "\tmax dist: " << cmd.cmd.search_max_dist << endl;
   cout << "\tmin range: " << cmd.cmd.serach_min_range << endl;
   cout << "\tmax rnage: " << cmd.cmd.serach_max_range << endl;
+
+  return cout;
 }

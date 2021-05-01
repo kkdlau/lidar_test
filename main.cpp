@@ -66,7 +66,6 @@ PointArray<T> partition(PointArray<T> arr, int index,
 }
 
 bool get_mb_cmd(serialib &serial, BytewiseRequestLidarCMD &cmd) {
-  BytewiseRequestLidarCMD cmd = {0};
   char tmp;
   char success = 0;
   do {
@@ -103,6 +102,7 @@ void transmit_circle(serialib &serial, const vector<BytewiseEstCricle> cs) {
     serial.writeChar(sizeof(BytewiseEstCricle) * cs.size()); // num_bytes
     for (const BytewiseEstCricle &c : cs) {
       serial.writeBytes(c.bytes, sizeof(BytewiseEstCricle));
+      usleep(COMMR_DEFAULT_TIMEOUT / 2);
     }
   }
 }
@@ -118,11 +118,31 @@ int main(int argc, const char *argv[]) {
   }
 
   while (true) {
-    BytewiseRequestLidarCMD cmd;
-    bool ok = get_mb_cmd(serial, cmd); // get read lidar cmd from main board
+    // BytewiseRequestLidarCMD cmd;
+    // bool ok = get_mb_cmd(serial, cmd); // get read lidar cmd from main board
 
-    if (!ok)
-      continue;
+    // if (!ok)
+    //   continue;
+
+    // cout << cmd << endl;
+
+    vector<BytewiseEstCricle> cs = {};
+
+    char tmp;
+    cin >> tmp;
+
+    Circle c(300, 700, 1000);
+    Circle c2(1000, 2000, 3000);
+    Circle c3(1000, 2000, 3000);
+    Circle c4(1000, 2000, 3000);
+    Circle c5(1000, 2000, 3000);
+    cs.push_back(c.toSendableCircle());
+    cs.push_back(c2.toSendableCircle());
+    cs.push_back(c3.toSendableCircle());
+    cs.push_back(c4.toSendableCircle());
+    cs.push_back(c5.toSendableCircle());
+
+    transmit_circle(serial, cs);
   }
 
   ifstream f;
