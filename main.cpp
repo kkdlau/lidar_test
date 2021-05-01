@@ -46,6 +46,7 @@
 #include <string>
 #include <vector>
 using namespace std;
+using namespace rp::standalone::rplidar;
 
 // read this:
 // https://lucidar.me/en/serialib/cross-plateform-rs232-serial-library/
@@ -117,6 +118,8 @@ int main(int argc, const char *argv[]) {
     cout << "failed to connect TTL" << endl;
     return 1;
   }
+
+  // RPlidarDriver *drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
 
   while (true) {
     // BytewiseRequestLidarCMD cmd;
