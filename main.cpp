@@ -33,6 +33,7 @@
 #include "CircleFitByKasa.hpp"
 #include "CircleFitByLevenbergMarquardtFull.hpp"
 #include "CircleFitByTaubin.hpp"
+#include "MainBoardCMD.hpp"
 #include "PointArray.hpp"
 #include "filter.hpp"
 //
@@ -64,24 +65,68 @@ PointArray<T> partition(PointArray<T> arr, int index,
   return ret;
 }
 
-void split(const string &s, vector<string> &tokens,
-           const string &delimiters = " ") {
-  string::size_type lastPos = s.find_first_not_of(delimiters, 0);
-  string::size_type pos = s.find_first_of(delimiters, lastPos);
-  while (string::npos != pos || string::npos != lastPos) {
-    tokens.push_back(
-        s.substr(lastPos, pos - lastPos)); // use emplace_back after C++11
-    lastPos = s.find_first_not_of(delimiters, pos);
-    pos = s.find_first_of(delimiters, lastPos);
+bool get_mb_cmd(serialib &serial, BytewiseRequestLidarCMD &cmd) {
+  BytewiseRequestLidarCMD cmd = {0};
+  char tmp;
+  char success = 0;
+  do {
+    serial.readChar(&tmp);
+  } while (tmp != COMMR_DEFAULT_START_BYTE);
+
+  success = serial.readChar(&tmp, COMMR_DEFAULT_TIMEOUT);
+
+  if (!success) {
+    cout << "failed to read num_byte" << endl;
+    return false;
+  }
+
+  short num_btye = tmp;
+  cout << "start receiving bytes from main board - num btye: " << num_btye
+       << endl;
+
+  for (int i = 0; i < num_btye; ++i) {
+    success = serial.readChar(&cmd.bytes[i], COMMR_DEFAULT_TIMEOUT);
+    if (!success) {
+      cout << "failed to read data segment." << endl;
+      return false;
+    }
+  }
+
+  return true;
+}
+
+void transmit_circle(serialib &serial, const vector<BytewiseEstCricle> cs) {
+  serial.writeChar(COMMR_DEFAULT_START_BYTE);
+  if (cs.size() > 8) {
+    // special case: msg is too large
+  } else {
+    serial.writeChar(sizeof(BytewiseEstCricle) * cs.size()); // num_bytes
+    for (const BytewiseEstCricle &c : cs) {
+      serial.writeBytes(c.bytes, sizeof(BytewiseEstCricle));
+    }
   }
 }
 
 int main(int argc, const char *argv[]) {
 
   serialib serial;
+  char success = serial.openDevice("/dev/tty.usbserial-1420", 115200);
+
+  if (!success) {
+    cout << "failed to connect TTL" << endl;
+    return 1;
+  }
+
+  while (true) {
+    BytewiseRequestLidarCMD cmd;
+    bool ok = get_mb_cmd(serial, cmd); // get read lidar cmd from main board
+
+    if (!ok)
+      continue;
+  }
 
   ifstream f;
-  f.open("Sample4/data.csv", ios::in);
+  f.open("Sample1/data.csv", ios::in);
   if (!f.is_open())
     return 1;
   vector<PolarVector> pvs;

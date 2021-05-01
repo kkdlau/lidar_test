@@ -16,6 +16,17 @@
 #include "Point.hpp"
 #include "helper_funcs.hpp"
 
+typedef struct {
+  Point<float> center;
+  float radius;
+  float sigma;
+} EstCricle;
+
+typedef union {
+  EstCricle c;
+  char bytes[sizeof(EstCricle)];
+} BytewiseEstCricle;
+
 class Circle {
 public:
   // The fields of a Circle
@@ -51,8 +62,18 @@ public:
   // routines
   void print(void) {
     cout << endl;
-    cout << setprecision(10) << "center (" << a << "," << b << ")  radius " << r
-         << "  sigma " << s << "  gradient " << g << "  iter " << i
-         << "  inner " << j << endl;
+    cout << "\t" << setprecision(10) << "center (" << a << "," << b
+         << ")  radius " << r << "  sigma " << s << "  gradient " << g
+         << "  iter " << i << "  inner " << j << endl;
+  }
+
+  BytewiseEstCricle toSendableCircle(void) {
+    EstCricle c;
+    c.center.x = static_cast<float>(this->center.x);
+    c.center.y = static_cast<float>(this->center.y);
+    c.radius = this->r;
+    c.sigma = this->s;
+
+    return (BytewiseEstCricle){.c = c};
   }
 };

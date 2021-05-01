@@ -131,7 +131,9 @@ double avgSlope(const PointArray<T> &arr, const int START, const int dir,
 }
 
 template <typename T>
-vector<int> localMinimum(const PointArray<T> &arr, const double searchingRad) {
+vector<int> localMinimum(const PointArray<T> &arr, double searchingRad) {
+  const double POT_RADIUS = 160.0;
+  const double MIN_SEARCHING_PLANE_SIZE = 40.0;
   vector<int> min;
 
   for (int i = 1; i < arr.size() - 1; ++i) {
@@ -141,20 +143,28 @@ vector<int> localMinimum(const PointArray<T> &arr, const double searchingRad) {
       continue;
 
     const double curRad = pv.rad;
+    for (int plane = 150; plane >= MIN_SEARCHING_PLANE_SIZE; plane -= 10) {
+      searchingRad = atan2(plane, pv.mag + POT_RADIUS);
 
-    double lslope = avgSlope(arr, i, -1, [curRad, searchingRad](double rad) {
-      return rad < curRad - searchingRad;
-    });
+      double lslope = avgSlope(arr, i, -1, [curRad, searchingRad](double rad) {
+        return rad < curRad - searchingRad;
+      });
 
-    double rslope = avgSlope(arr, i, 1, [curRad, searchingRad](double rad) {
-      return rad > curRad + searchingRad;
-    });
+      double rslope = avgSlope(arr, i, 1, [curRad, searchingRad](double rad) {
+        return rad > curRad + searchingRad;
+      });
+#define to_deg(r) ((r) / M_PI * 180)
+      if (slopeTrend(lslope) == Trend::DOWNWARD &&
+          slopeTrend(rslope) == Trend::UPWARD) {
+        cout << "min on:" << to_deg(pv.rad) << ", searching from "
+             << to_deg(pv.rad - searchingRad) << " to "
+             << to_deg(pv.rad + searchingRad) << endl;
+        min.push_back(i);
+        while (PolarVector::fromCartesian(arr[i]).rad < curRad + searchingRad)
+          i++;
 
-    if (slopeTrend(lslope) == Trend::DOWNWARD &&
-        slopeTrend(rslope) == Trend::UPWARD) {
-      min.push_back(i);
-      while (PolarVector::fromCartesian(arr[i]).rad < curRad + searchingRad)
-        i++;
+        break;
+      }
     }
   }
 
