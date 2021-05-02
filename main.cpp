@@ -119,7 +119,8 @@ int main(int argc, const char *argv[]) {
     return 1;
   }
 
-  // RPlidarDriver *drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
+  RPlidarDriver *drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
+  rplidar_response_measurement_node_hq_t nodes[8192];
 
   while (true) {
     // BytewiseRequestLidarCMD cmd;
