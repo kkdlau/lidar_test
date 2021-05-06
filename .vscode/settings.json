@@ -5,6 +5,8 @@
         "istream": "cpp",
         "vector": "cpp",
         "algorithm": "cpp",
-        "ostream": "cpp"
-    }
+        "ostream": "cpp",
+        "string": "cpp"
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }
