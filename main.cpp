@@ -52,7 +52,7 @@ using namespace rp::standalone::rplidar;
 #define _countof(_Array) (int)(sizeof(_Array) / sizeof(_Array[0]))
 #endif
 
-// #define USE_MOCK_DATA 1
+#define USE_MOCK_DATA 1
 
 // read this:
 // https://lucidar.me/en/serialib/cross-plateform-rs232-serial-library/
@@ -240,8 +240,6 @@ int main(int argc, const char *argv[]) {
     return 1;
   }
 
-  drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
-
   if (!opt_com_path) {
 #ifdef _WIN32
     // use default com port
@@ -256,7 +254,7 @@ int main(int argc, const char *argv[]) {
   PointArray<double> pts;
 
 #ifndef USE_MOCK_DATA
-
+  drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
   connect_lidar(drv);
 
   if (!checkRPLIDARHealth(drv)) {
@@ -271,7 +269,7 @@ int main(int argc, const char *argv[]) {
 
 #else
   ifstream f;
-  f.open("Sample3/data.csv", ios::in);
+  f.open("plot.csv", ios::in);
   if (!f.is_open())
     return 1;
 
@@ -290,7 +288,7 @@ int main(int argc, const char *argv[]) {
 
   while (true) {
     BytewiseRequestLidarCMD cmd = {.cmd = {.search_max_dist = 7000,
-                                           .search_min_dist = 2000,
+                                           .search_min_dist = 1000,
                                            .serach_min_range = 0,
                                            .serach_max_range = 180}};
     // bool ok = get_mb_cmd(serial, cmd); // get read lidar cmd from main board
@@ -298,7 +296,7 @@ int main(int argc, const char *argv[]) {
     // if (!ok)
     //   continue;
 
-    cout << cmd << endl;
+    // cout << cmd << endl;
 #define within(d, _min, _max) (d >= _min && d <= _max)
 #ifndef USE_MOCK_DATA
     rplidar_response_measurement_node_hq_t nodes[8192];
@@ -337,6 +335,10 @@ int main(int argc, const char *argv[]) {
       plotFile.close();
     }
 #else
+    ofstream plotFile;
+    plotFile.open("plot_filtered.csv");
+
+    plotFile << "angle,distance" << endl;
     for (string &s : tokens) {
       vector<string> splitted;
 
@@ -346,16 +348,23 @@ int main(int argc, const char *argv[]) {
       if (!within(dist, cmd.cmd.search_min_dist, cmd.cmd.search_max_dist) ||
           !within(angle, cmd.cmd.serach_min_range, cmd.cmd.serach_max_range)) {
         dist = 0;
+        continue;
       }
 
       PolarVector pv = PolarVector::inDegree(angle, dist);
       pvs.push_back(pv);
       pts.push_back(pv.toCartesian());
+
+      plotFile << pv.toCSVString() << endl;
     }
+    plotFile.close();
 #endif
 
-    vector<int> min = Filter::localMinimum(pts, 0.004);
+    vector<int> min = Filter::localMinimum(pts, 0.003);
     vector<BytewiseEstCricle> cs = {};
+    for (int &m : min) {
+      m = Filter::linearMinimum(pts, m);
+    }
 
     for (int m : min) {
       cout << m << ": " << pvs[m].toString() << endl;
@@ -364,27 +373,37 @@ int main(int argc, const char *argv[]) {
 
       best.r = 10000000;
 
-      for (int s = 3; s < 50; s += 1) {
+      int bestSize = 1;
+
+      for (int s = 1; s < 10; s += 1) {
         PointArray<double> circleData = partition(pts, m, s);
         Circle c = CircleFittingModel::taubinFitting(circleData);
-        CircleFittingModel::levenbergMarquardtFullFitting(circleData, c, 0.0001,
+        CircleFittingModel::levenbergMarquardtFullFitting(circleData, c, 0.001,
                                                           c);
         if (abs(160 - c.r) < abs(160 - best.r)) {
           best = c;
+          bestSize = s;
         }
       }
+      cout << "bestSize: " << bestSize << endl;
 
       best.print();
       cs.push_back(best.toSendableCircle());
     }
 
-    for (BytewiseEstCricle &c : cs) {
-      c.c.center.x *= -1; // flip the sign
-    }
-    transmit_circle(serial, cs);
+    // for (BytewiseEstCricle &c : cs) {
+    //   c.c.center.x *= -1; // flip the sign
+    // }
+    // transmit_circle(serial, cs);
 
-    pvs.clear();
-    pts.clear();
+    // pvs.clear();
+    // pts.clear();
+
+    break;
   }
+
+  cout << "list done" << endl;
+
+  my_handler(0);
   return 0;
 }

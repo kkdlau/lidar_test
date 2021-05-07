@@ -123,7 +123,7 @@ double avgSlope(const PointArray<T> &arr, const int START, const int dir,
       v += d;
       count++;
     }
-    i += 1 * dir;
+    i += 3 * dir;
     pv = PolarVector::fromCartesian(arr[i]);
   } while (!shouldStop(pv.rad) && i >= 0 && i < arr.size());
 
@@ -133,7 +133,7 @@ double avgSlope(const PointArray<T> &arr, const int START, const int dir,
 template <typename T>
 vector<int> localMinimum(const PointArray<T> &arr, double searchingRad) {
   const double POT_RADIUS = 160.0;
-  const double MIN_SEARCHING_PLANE_SIZE = 40.0;
+  const double MIN_SEARCHING_PLANE_SIZE = 120.0;
   vector<int> min;
 
   for (int i = 1; i < arr.size() - 1; ++i) {
@@ -170,4 +170,92 @@ vector<int> localMinimum(const PointArray<T> &arr, double searchingRad) {
 
   return min;
 }
+
+int search(const PointArray<double> arr, double rad, int start = 0,
+           int dir = 1) {
+  for (start; start < arr.size(); start += dir) {
+    PolarVector pv = PolarVector::fromCartesian(arr[start]);
+    if (dir == 1) {
+      if (pv.rad >= rad && pv.mag != 0)
+        return start;
+    } else {
+      if (pv.rad <= rad && pv.mag != 0)
+        return start;
+    }
+  }
+
+  return -1;
+}
+
+int numDataInRange(const PointArray<double> &arr, int start, int maxRad) {
+  int count = 0;
+  for (start; start < arr.size(); ++start) {
+    PolarVector pv = PolarVector::fromCartesian(arr[start]);
+    if (pv.rad < maxRad && pv.mag != 0)
+      count++;
+    else if (pv.rad > maxRad)
+      break;
+  }
+
+  return count;
+}
+
+int linearMinimum(const PointArray<double> &arr, int i, int range = 5) {
+  int lowerBound = max(0, i - range);
+  int upperBound = min((int)arr.size(), i + range);
+
+  for (int r = lowerBound; r < upperBound; ++r) {
+    const double mag = PolarVector::fromCartesian(arr[r]).mag;
+
+    if (mag == 0)
+      continue;
+    if (PolarVector::fromCartesian(arr[i]).mag >
+        PolarVector::fromCartesian(arr[r]).mag) {
+      i = r;
+    }
+  }
+
+  return i;
+}
+
+vector<int> localMinV2(const PointArray<double> &arr) {
+  const double POT_RADIUS = 160.0;
+  vector<int> min;
+
+  for (int i = 0; i < arr.size(); ++i) {
+    PolarVector pv = PolarVector::fromCartesian(arr[i]);
+
+    if (pv.mag == 0) // invalid data, skip
+      continue;
+
+    const double currentRad = pv.rad;
+
+    double searchingRad = atan2(POT_RADIUS - 10, pv.mag + POT_RADIUS);
+
+    cout << "on " << currentRad << " with searching range: " << searchingRad
+         << endl;
+
+    int start_index = search(arr, currentRad - searchingRad, i, -1);
+    if (start_index == -1) {
+      cout << "cant find left bound" << endl;
+      continue;
+    }
+
+    int end_index = search(arr, currentRad + searchingRad, i, 1);
+    if (end_index == -1) {
+      cout << "cant find right bound" << endl;
+      continue;
+    }
+
+    int numLeftData = numDataInRange(arr, start_index, currentRad);
+    int numRightData = numDataInRange(arr, i, currentRad + searchingRad);
+    if (numLeftData < 5 || numRightData < 5) {
+      cout << "dun hv enough sample data" << endl;
+      continue;
+    }
+  }
+
+  return min;
+}
+
 } // namespace Filter
